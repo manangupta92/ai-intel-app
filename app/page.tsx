@@ -27,6 +27,26 @@ export default function Page() {
     }
   }
 
+  const downloadExcel = async () => {
+    if (!result?.company) return;
+
+    const res = await fetch(`/api/download?company=${encodeURIComponent(result.company)}`);
+    if (!res.ok) {
+      alert("Excel not found.");
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${result.company}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   return (
     <main className="max-w-5xl mx-auto p-6 space-y-6">
       <h1 className="text-3xl font-bold">AI Intel App</h1>
@@ -47,7 +67,7 @@ export default function Page() {
           <div className="text-lg font-semibold">Result</div>
           <div className="text-sm">Run ID: <span className="code">{result._id}</span></div>
           <div className="text-sm">Ticker: <span className="code">{result.ticker}</span></div>
-          <a className="underline" href={result.excelPath} target="_blank">Download Excel</a>
+          <button className="btn" onClick={downloadExcel}>Download Excel</button>
           <pre className="whitespace-pre-wrap text-sm">{result.analysis}</pre>
         </div>
       )}

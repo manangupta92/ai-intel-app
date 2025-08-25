@@ -1,3 +1,5 @@
+import "./globals.css";
+
 export const metadata = {
   title: "AI Intel App",
   description: "News + Intraday Candles + AI Analysis"
