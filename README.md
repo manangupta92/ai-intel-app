@@ -38,8 +38,8 @@ OPENAI_API_KEY=your_openai_key
 
 # Authentication
 JWT_SECRET=your_jwt_secret_key
-POSTMARK_API_KEY=your_postmark_api_key
-POSTMARK_FROM_EMAIL=your_verified_sender@domain.com
+SENDGRID_API_KEY=your_postmark_api_key
+SENDGRID_FROM_EMAIL=your_verified_sender@domain.com
 ```
 
 4. **Start Development Server**
