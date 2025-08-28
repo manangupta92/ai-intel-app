@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+
 export default function Page() {
   const [company, setCompany] = useState("");
   const [ticker, setTicker] = useState("");
