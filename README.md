@@ -30,16 +30,45 @@ cp .env.example .env
 3. **Configure Environment Variables**
 
 ```env
-# MongoDB
-MONGODB_URI=your_mongodb_uri
+# MongoDB Configuration
+MONGO_USER=admin                    # MongoDB username
+MONGO_PASSWORD=your_secure_password # MongoDB password
+MONGO_DB=ai-intel-app              # MongoDB database name
 
 # OpenAI
 OPENAI_API_KEY=your_openai_key
 
 # Authentication
 JWT_SECRET=your_jwt_secret_key
-SENDGRID_API_KEY=your_postmark_api_key
+SENDGRID_API_KEY=your_sendgrid_api_key
 SENDGRID_FROM_EMAIL=your_verified_sender@domain.com
+```
+
+### Production Deployment with Docker
+
+1. **Build and Start Services**
+
+```bash
+docker-compose up -d
+```
+
+2. **MongoDB Security Features**
+
+- Authentication enabled by default
+- Secure password stored as environment variable
+- Database initialization script for user creation
+- Health checks ensure database is ready before app starts
+- Volume persistence for data reliability
+- Network isolation through Docker network
+
+3. **Monitoring MongoDB**
+
+```bash
+# Check MongoDB logs
+docker-compose logs mongodb
+
+# Access MongoDB shell (replace user/pass with your credentials)
+docker exec -it ai-intel-app-mongodb-1 mongosh -u $MONGO_USER -p $MONGO_PASSWORD
 ```
 
 4. **Start Development Server**
@@ -89,3 +118,8 @@ pnpm dev
 - Consider licensed news APIs for production use
 - Implement proper rate limiting and error handling
 - Use secure email service with production-grade delivery rates
+- Add health checks
+- Configure MongoDB authentication
+- Use Docker secrets for sensitive data
+- Add a reverse proxy (like Nginx)
+- Configure proper SSL/TLS

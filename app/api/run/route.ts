@@ -4,10 +4,29 @@ import fs from "fs";
 import path from "path";
 import Run from "@/models/Run";
 import { fetchNewsSimple, fetchCandlesAll, analyzeReport, writeExcel } from "@/lib/agents";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { headers } from "next/headers";
 
 // -------- POST: Run Job --------
 export async function POST(req: Request) {
   try {
+    // Check rate limit
+    const headersList = headers();
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const rateLimitResult = await checkRateLimit(ip);
+    
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: rateLimitResult.error },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitResult.resetAfter)
+          }
+        }
+      );
+    }
+
     await dbConnect();
     const { company, ticker: maybeTicker } = await req.json();
     if (!company) {

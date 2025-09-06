@@ -50,7 +50,7 @@ export default function Page() {
 
   return (
     <main className="max-w-5xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">AI Intel App</h1>
+      <h1 className="text-3xl font-bold">AI Stock Trading Assistant</h1>
       <div className="card space-y-3">
         <label className="label">Company Name</label>
         <input className="input" placeholder="Reliance Industries" value={company} onChange={e=>setCompany(e.target.value)} />
