@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   app:
@@ -18,9 +18,12 @@ services:
       SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       REDIS_URL: redis://redis:6379
+      PYTHON_ANALYSIS_URL: http://python-analysis:8000/analyze
     volumes:
       - ./public:/app/public
     depends_on:
+      python-analysis:
+        condition: service_healthy
       mongodb:
         condition: service_healthy
       redis:
@@ -29,6 +32,25 @@ services:
       - app-network
     restart: unless-stopped
 
+  python-analysis:
+    build:
+      context: ./python-analysis
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./public:/app/public
+    environment:
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - app-network
+    restart: unless-stopped
   redis:
     image: redis:alpine
     ports:
@@ -54,7 +76,16 @@ services:
       - app-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mongosh", "--username=${MONGO_USER}", "--password=${MONGO_PASSWORD}", "--authenticationDatabase=admin", "--eval", "db.adminCommand('ping')"]
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--username=${MONGO_USER}",
+          "--password=${MONGO_PASSWORD}",
+          "--authenticationDatabase=admin",
+          "--eval",
+          "db.adminCommand('ping')",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5

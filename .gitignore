@@ -4,3 +4,12 @@ package-lock.json
 .next/
 .vscode/
 /public/output/
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+*.log

@@ -7,13 +7,11 @@ export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   console.log("Download route called");
-    debugger;
   const { searchParams } = new URL(req.url);
   const company = searchParams.get("company");
   if (!company) {
     return NextResponse.json({ error: "company is required" }, { status: 400 });
   }
-  debugger;
   console.log(process.cwd());
   const companyName = `${company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.xlsx`;
   console.log(path.join(process.cwd(), "public", "output", `${companyName}`));
