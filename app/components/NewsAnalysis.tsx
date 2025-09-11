@@ -27,7 +27,7 @@ export default function NewsAnalysis({ analysis }: Props) {
         </div>
         <div>
           <h3 className="font-medium mb-2">Impact Assessment:</h3>
-          <p className="text-sm text-gray-700">{analysis.impact_assessment}</p>
+          <p className="text-sm text-blue-700">{analysis.impact_assessment}</p>
         </div>
       </div>
     </div>

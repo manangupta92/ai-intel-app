@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import mockData from "./mock.json";
 import { StockData } from "./types/analysis";
 import StockInfo from "./components/StockInfo";
 import TechnicalAnalysis from "./components/TechnicalAnalysis";
 import TradeRecommendation from "./components/TradeRecommendation";
 import NewsAnalysis from "./components/NewsAnalysis";
+import { useAuth } from "@/lib/contexts/auth";
 
 interface Company {
   name: string;
@@ -14,124 +15,172 @@ interface Company {
 }
 
 export default function Page() {
-  const [company, setCompany] = useState(mockData.company || "");
-  const [ticker, setTicker] = useState(mockData.ticker || "");
-  const [suggestions, setSuggestions] = useState<Company[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchHistory, setSearchHistory] = useState<Company[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<StockData | null>(mockData as StockData);
   const [error, setError] = useState("");
-  const suggestionRef = useRef<HTMLDivElement>(null);
+  const [token, setToken] = useState<string | null>(null);
   const debounceTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        suggestionRef.current &&
-        !suggestionRef.current.contains(event.target as Node)
-      ) {
-        setShowSuggestions(false);
+  const fetchSearchHistory = useCallback(async () => {
+    if (!token) {
+      setError("Please login to view your search history");
+      setLoadingHistory(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/search-history', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.status === 401) {
+        setError("Session expired. Please login again");
+        setToken(null);
+        localStorage.removeItem('authToken');
+        setLoadingHistory(false);
+        return;
       }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+      if (!res.ok) throw new Error('Failed to fetch search history');
+
+      const history = await res.json();
+      setSearchHistory(history);
+      setLoadingHistory(false);
+    } catch (error) {
+      console.error('Error fetching search history:', error);
+      setError('Error fetching search history');
+      setLoadingHistory(false);
+    }
+  }, [token, setError, setSearchHistory, setLoadingHistory, setToken]);
+
+  // Initialize token and fetch search history when component mounts
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken');
+    setToken(storedToken);
   }, []);
 
-  const debouncedFetchSuggestions = useCallback(async (query: string) => {
+  // Fetch search history whenever token changes
+  useEffect(() => {
+    if (token) {
+      fetchSearchHistory();
+    }
+  }, [token]);
+
+  const debouncedFetchCompanies = useCallback(async (query: string) => {
     if (query.length < 2) {
-      setSuggestions([]);
+      setCompanies([]);
       return;
     }
 
     try {
       const res = await fetch(`/api/companies?q=${encodeURIComponent(query)}`);
-      if (!res.ok) throw new Error("Failed to fetch suggestions");
+      if (!res.ok) throw new Error("Failed to fetch companies");
       const data = await res.json();
-      setSuggestions(data);
+      setCompanies(data);
     } catch (e) {
-      console.error("Error fetching suggestions:", e);
+      console.error("Error fetching companies:", e);
     }
   }, []);
 
-  const fetchSuggestions = useCallback(
+  const handleSearch = useCallback(
     (query: string) => {
-      // Clear any existing timeout
+      setSearchQuery(query);
       if (debounceTimeout.current) {
         clearTimeout(debounceTimeout.current);
       }
-
-      // Set a new timeout
       debounceTimeout.current = setTimeout(() => {
-        debouncedFetchSuggestions(query);
-      }, 300); // 300ms delay
+        debouncedFetchCompanies(query);
+      }, 300);
     },
-    [debouncedFetchSuggestions]
+    [debouncedFetchCompanies]
   );
 
-  const handleCompanySelect = (company: Company) => {
-    setCompany(company.name);
-    setTicker(company.symbol);
-    setShowSuggestions(false);
-  };
+  const handleCompanySelect = async (company: Company) => {
+    setSelectedCompany(company);
+    setSearchQuery("");
+    setCompanies([]);
 
-  const handleCompanyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setCompany(value);
-    setShowSuggestions(true);
-    fetchSuggestions(value);
-  };
+    // Update search history in backend
+    if (token) {
+      try {
+        const res = await fetch('/api/search-history', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(company),
+        });
 
-  async function runPipeline() {
-    if (!ticker) {
-      setError("Please select a valid company from the suggestions");
-      return;
+        if (res.status === 401) {
+          setError("Session expired. Please login again");
+          setToken(null);
+          localStorage.removeItem('authToken');
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error('Failed to update search history');
+        }
+
+        // Refresh search history after successful update
+        fetchSearchHistory();
+      } catch (error) {
+        console.error('Error updating search history:', error);
+      }
+    } else {
+      console.warn('Not saving to search history - user not authenticated');
     }
 
+    // Run analysis for the selected company
+    await runAnalysis(company);
+  };
+  
+  const runAnalysis = useCallback(async (company: Company) => {
     setRunning(true);
     setError("");
     setResult(null);
 
     try {
-      //Use mockdata for testing
-      // const res = await fetch("/mock.json");
-      // if (!res.ok) throw new Error("Failed to fetch mock data");
-      // const data = await res.json();
-      // console.log("Mock data:", data);
-      // setResult(data);
-      // return;
-
-      // Actual API call
       const res = await fetch("/api/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ company, ticker }),
+        body: JSON.stringify({
+          company: company.name,
+          ticker: company.symbol,
+        }),
       });
+
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      console.log("Pipeline result:", data);
-
       setResult(data);
     } catch (e) {
-      setError(String(e));
+      setError(e instanceof Error ? e.message : "An error occurred");
+      console.error("Error:", e);
     } finally {
       setRunning(false);
     }
-  }
+  }, []);
 
-  const downloadExcel = async () => {
+  const handleDownload = async () => {
     if (!result) return;
 
     try {
       const res = await fetch(
         `/api/download?company=${encodeURIComponent(result.company)}`
       );
-      if (!res.ok) {
-        throw new Error("Excel file not found");
-      }
+      if (!res.ok) throw new Error("Excel file not found");
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
-
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", `${result.company}.xlsx`);
@@ -146,67 +195,136 @@ export default function Page() {
   };
 
   return (
-    <main className="max-w-5xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">AI Stock Trading Assistant</h1>
-      <div className="card space-y-3">
-        <label className="label">Company Name</label>
-        <div className="relative">
-          <input
-            className="input w-full"
-            placeholder="Start typing company name..."
-            value={company}
-            onChange={handleCompanyChange}
-          />
-          {showSuggestions && suggestions.length > 0 && (
-            <div
-              ref={suggestionRef}
-              className="absolute z-10 w-full bg-white mt-1 border rounded-md shadow-lg max-h-60 overflow-auto"
-            >
-              {suggestions.map((item, index) => (
-                <div
-                  key={index}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleCompanySelect(item)}
-                >
-                  <div>{item.name}</div>
-                  <div className="text-sm text-gray-500">{item.symbol}</div>
+    <div className="flex min-h-screen">
+      {/* Main Content */}
+      <div className="flex-1">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
+          <h1 className="text-2xl font-bold mb-8">AI Stock Analysis</h1>
+          
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Left Pane - Company List */}
+            <div className="w-full md:w-64 flex-shrink-0">
+              <div className="bg-gray-900 rounded-lg p-4 sticky top-4 flex flex-col" style={{ height: 'calc(100vh - 4rem)' }}>
+                <div className="flex-none mb-4">
+                  <input
+                    type="text"
+                    placeholder="Search companies..."
+                    className="w-full p-2 rounded bg-gray-800"
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                  />
                 </div>
-              ))}
+                
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  {/* Search Results */}
+                  {companies.length > 0 ? (
+                    companies.map((company) => (
+                      <button
+                        key={company.symbol}
+                        onClick={() => handleCompanySelect(company)}
+                        className={`w-full text-left p-2 rounded hover:bg-gray-800 transition-colors ${
+                          selectedCompany?.symbol === company.symbol
+                            ? "bg-gray-800"
+                            : ""
+                        }`}
+                      >
+                        <div className="font-medium">{company.symbol}</div>
+                        <div className="text-sm text-gray-400">{company.name}</div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-gray-400 text-sm">
+                      {searchQuery.length < 2
+                        ? "Start typing to search companies"
+                        : "No companies found"}
+                    </div>
+                  )}
+
+                  {/* Recent Searches */}
+                  {!searchQuery && (
+                    <div className="mt-6">
+                      <div className="text-sm text-gray-400 mb-2">Recent Searches</div>
+                      {loadingHistory ? (
+                        <div className="text-center py-4">
+                          <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                        </div>
+                      ) : searchHistory.length > 0 ? (
+                        <div className="space-y-2">
+                          {searchHistory.map((company) => (
+                            <button
+                              key={company.symbol}
+                              onClick={() => handleCompanySelect(company)}
+                              className={`w-full text-left p-2 rounded hover:bg-gray-800 transition-colors ${
+                                selectedCompany?.symbol === company.symbol
+                                  ? "bg-gray-800"
+                                  : ""
+                              }`}
+                            >
+                              <div className="font-medium">{company.symbol}</div>
+                              <div className="text-sm text-gray-400">{company.name}</div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-gray-400 text-sm text-center py-2">
+                          No recent searches
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Logout Button */}
+                {isAuthenticated && (
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('authToken');
+                      // Use Next.js navigation to go to login page
+                      window.location.href = '/auth/login';
+                    }}
+                    className="mt-4 w-full p-2 rounded bg-red-600 hover:bg-red-700 transition-colors text-white font-medium"
+                  >
+                    Logout
+                  </button>
+                )}
+              </div>
             </div>
-          )}
+
+            {/* Right Pane - Analysis Results */}
+            <div className="flex-1">
+              {running && (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                  <div className="mt-4">Analyzing...</div>
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-900/50 text-red-200 p-4 rounded mb-4">
+                  {error}
+                </div>
+              )}
+
+              {result && !running && (
+                <div className="space-y-6">
+                  <StockInfo data={result} onDownload={handleDownload} />
+                  <TechnicalAnalysis analysis={result.analysis.technical_analysis} />
+                  <TradeRecommendation
+                    recommendation={result.analysis.trade_recommendation}
+                  />
+                  <NewsAnalysis analysis={result.analysis.news_analysis} />
+                </div>
+              )}
+
+              {!result && !running && !error && (
+                <div className="text-center py-8 text-gray-400">
+                  Select a company to view analysis
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <label className="label">Ticker</label>
-        <input
-          className="input"
-          placeholder="Will be automatically filled"
-          value={ticker}
-          readOnly
-        />
-        <button
-          className="btn"
-          disabled={!ticker || running}
-          onClick={runPipeline}
-        >
-          {running ? "Running..." : "Run Pipeline"}
-        </button>
       </div>
-
-      {error && (
-        <div className="card">
-          <div className="text-red-600">{error}</div>
-        </div>
-      )}
-
-      {result && (
-        <div className="space-y-6">
-          <StockInfo data={result} onDownload={downloadExcel} />
-          <TechnicalAnalysis analysis={result.analysis.technical_analysis} />
-          <TradeRecommendation
-            recommendation={result.analysis.trade_recommendation}
-          />
-          <NewsAnalysis analysis={result.analysis.news_analysis} />
-        </div>
-      )}
-    </main>
+    </div>
   );
 }

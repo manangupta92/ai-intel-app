@@ -12,7 +12,7 @@ services:
       - 8.8.8.8
     environment:
       NODE_ENV: production
-      MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      MONGODB_URI: ${MONGODB_URI}
       JWT_SECRET: ${JWT_SECRET}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY}
       SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL}
@@ -23,8 +23,6 @@ services:
       - ./public:/app/public
     depends_on:
       python-analysis:
-        condition: service_healthy
-      mongodb:
         condition: service_healthy
       redis:
         condition: service_started
@@ -61,35 +59,7 @@ services:
       - app-network
     restart: unless-stopped
 
-  mongodb:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_DB}
-    volumes:
-      - mongodb_data:/data/db
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    networks:
-      - app-network
-    restart: unless-stopped
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "mongosh",
-          "--username=${MONGO_USER}",
-          "--password=${MONGO_PASSWORD}",
-          "--authenticationDatabase=admin",
-          "--eval",
-          "db.adminCommand('ping')",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+
 
 networks:
   app-network:

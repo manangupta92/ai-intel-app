@@ -61,11 +61,23 @@ def calculate_indicators(df: pd.DataFrame) -> dict:
 @app.post("/analyze")
 async def analyze_data(request: AnalysisRequest):
     try:
-        OUTPUT_DIR = os.path.join("/app", "public", "output")
+        # In Docker, the volume is mounted at /app/public/output
+        OUTPUT_DIR = "/app/public/output"
+        
         request.company = request.company.lower().replace(" ", "-")
         excel_path = os.path.join(OUTPUT_DIR, f"{request.company}.xlsx")
+        
         print(f"Received analysis request for {excel_path}")
-        print(f"Directory contents: {os.listdir(os.path.dirname(excel_path))}")
+        print(f"Output directory: {OUTPUT_DIR}")
+        
+        # Create output directory if it doesn't exist
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        
+        # Print directory contents
+        if os.path.exists(OUTPUT_DIR):
+            print(f"Directory contents: {os.listdir(OUTPUT_DIR)}")
+        else:
+            print(f"Directory does not exist: {OUTPUT_DIR}")
 
         if not os.path.exists(excel_path):
             raise HTTPException(

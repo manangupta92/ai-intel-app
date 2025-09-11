@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { dbConnect } from "@/lib/mongo";
+import { connectToDatabase } from "@/lib/db/mongo";
 import fs from "fs";
 import Run from "@/models/Run";
 import {
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       );
     }
 
-    await dbConnect();
+    await connectToDatabase();
     const { company, ticker: maybeTicker } = await req.json();
     if (!company) {
       return NextResponse.json(
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
     // Check cache (no cache period for now = always fetch fresh)
     const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 0);
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     const existingRun = await (Run as any)
       .findOne({ company, createdAt: { $gt: oneWeekAgo } })
