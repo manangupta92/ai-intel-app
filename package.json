@@ -31,12 +31,14 @@
     "yahoo-finance2": "^2.11.4"
   },
   "devDependencies": {
-    "@types/react": "19.1.11",
+    "@types/node": "^24.3.1",
+    "@types/react": "^19.1.11",
+    "@types/react-dom": "^19.1.9",
     "autoprefixer": "^10.4.20",
     "drizzle-orm": "^0.44.5",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.5",
     "postcss": "^8.4.41",
-    "typescript": "^5.6.2"
+    "typescript": "^5.9.2"
   }
 }
