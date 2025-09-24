@@ -18,9 +18,9 @@ export default function NewsAnalysis({ analysis }: Props) {
         <div>
           <h3 className="font-medium mb-2">Key Events:</h3>
           <ul className="list-disc list-inside space-y-1">
-            {analysis.key_events.map((event, index) => (
+            {analysis.key_events.map((event: any, index) => (
               <li key={index} className="text-sm text-blue-700">
-                {event}
+                {event.title} ({new Date(event.date).toLocaleDateString()})
               </li>
             ))}
           </ul>

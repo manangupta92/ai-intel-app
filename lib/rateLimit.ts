@@ -6,7 +6,7 @@ export const apiLimiter = new RateLimiterRedis({
   keyPrefix: "api_rate_limit",
   points: 5, // Number of points
   duration: 60, // Per 60 seconds
-  blockDuration: 60 * 10, // Block for 10 minutes if consumed too many points
+  blockDuration: 60 * 1 * 24, // Block for 24 hours if consumed too many points
 });
 
 export async function checkRateLimit(ip: string) {
@@ -14,7 +14,10 @@ export async function checkRateLimit(ip: string) {
     await apiLimiter.consume(ip);
     return { success: true };
   } catch (error) {
-    const resetAfter = Math.round(error.msBeforeNext / 1000) || 1;
+    const msBeforeNext = typeof error === "object" && error !== null && "msBeforeNext" in error
+      ? (error as { msBeforeNext: number }).msBeforeNext
+      : 1000;
+    const resetAfter = Math.round(msBeforeNext / 1000) || 1;
     return {
       success: false,
       error: "Too many requests",

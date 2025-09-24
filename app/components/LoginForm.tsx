@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/auth';
 
 interface LoginFormProps {
@@ -66,13 +67,13 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
   return (
     <div className="card p-6 max-w-md mx-auto">
       <h2 className="text-xl font-semibold mb-4">Login</h2>
-      
+
       {error && (
         <div className="bg-red-900/50 text-red-200 p-3 rounded mb-4">
           {error}
         </div>
       )}
-      
+
       {message && (
         <div className="bg-green-900/50 text-green-200 p-3 rounded mb-4">
           {message}
@@ -126,7 +127,7 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
               {isRequesting ? 'Verifying...' : 'Verify OTP'}
             </button>
           </form>
-          
+
           <div className="flex justify-between items-center pt-2">
             <button
               onClick={() => {
@@ -143,7 +144,7 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
               onClick={async () => {
                 setMessage('');
                 setError('');
-                await requestOTP({ preventDefault: () => {} } as React.FormEvent);
+                await requestOTP({ preventDefault: () => { } } as React.FormEvent);
               }}
               disabled={isRequesting}
               className="text-sm text-blue-400 hover:text-blue-300"
@@ -153,6 +154,15 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
           </div>
         </div>
       )}
+
+      <div className="mt-6 text-center">
+        <p className="text-sm text-gray-400">
+          Don't have an account?{' '}
+          <Link href="/auth/register" className="text-blue-400 hover:text-blue-300">
+            Create one here
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

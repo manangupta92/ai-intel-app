@@ -83,7 +83,7 @@ export async function POST(req: Request) {
     // 4) Compact candles
     const compact = Object.entries(candles).map(([interval, rows]) => ({
       interval,
-      rows: rows.slice(-300).map((r) => ({
+      rows: rows.slice(-300).map((r : any) => ({
         t: r.Datetime,
         o: r.Open,
         h: r.High,

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import mockData from "./mock.json";
 import { StockData } from "./types/analysis";
 import StockInfo from "./components/StockInfo";
 import TechnicalAnalysis from "./components/TechnicalAnalysis";
 import TradeRecommendation from "./components/TradeRecommendation";
 import NewsAnalysis from "./components/NewsAnalysis";
+import LogoutButton from "./components/LogoutButton";
 import { useAuth } from "@/lib/contexts/auth";
 
 interface Company {
@@ -15,7 +17,8 @@ interface Company {
 }
 
 export default function Page() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, token: authToken } = useAuth();
+  const router = useRouter();
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,6 +29,14 @@ export default function Page() {
   const [error, setError] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const debounceTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  // Client-side authentication check - redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated && authToken === null) {
+      router.push('/auth/login');
+      return;
+    }
+  }, [isAuthenticated, authToken, router]);
 
   const fetchSearchHistory = useCallback(async () => {
     if (!token) {
@@ -194,15 +205,30 @@ export default function Page() {
     }
   };
 
+  // Show loading state while authentication is being verified
+  if (authToken === null && !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          <div className="mt-4">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen">
       {/* Main Content */}
       <div className="flex-1">
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold mb-8">AI Stock Analysis</h1>
-          
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Left Pane - Company List */}
+        {/* Header */}
+        <header className="bg-gray-800 px-4 py-3 flex justify-between items-center">
+          <h1 className="text-xl font-bold">AI Stock Analysis</h1>
+          <LogoutButton />
+        </header>
+        
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">          
+          <div className="flex flex-col md:flex-row gap-8">{/* Left Pane - Company List */}
             <div className="w-full md:w-64 flex-shrink-0">
               <div className="bg-gray-900 rounded-lg p-4 sticky top-4 flex flex-col" style={{ height: 'calc(100vh - 4rem)' }}>
                 <div className="flex-none mb-4">
@@ -274,19 +300,6 @@ export default function Page() {
                   )}
                 </div>
                 
-                {/* Logout Button */}
-                {isAuthenticated && (
-                  <button
-                    onClick={() => {
-                      localStorage.removeItem('authToken');
-                      // Use Next.js navigation to go to login page
-                      window.location.href = '/auth/login';
-                    }}
-                    className="mt-4 w-full p-2 rounded bg-red-600 hover:bg-red-700 transition-colors text-white font-medium"
-                  >
-                    Logout
-                  </button>
-                )}
               </div>
             </div>
 

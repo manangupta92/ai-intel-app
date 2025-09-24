@@ -25,10 +25,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    // Check for stored token on mount
-    const token = localStorage.getItem('authToken');
+    // Check for stored token on mount - check both localStorage and cookies
+    let token = localStorage.getItem('authToken');
+    
+    // If not in localStorage, check cookies
+    if (!token) {
+      const cookieString = document.cookie;
+      const tokenMatch = cookieString.match(/token=([^;]*)/);
+      if (tokenMatch) {
+        token = tokenMatch[1];
+      }
+    }
+    
     if (token) {
       validateToken(token);
+    } else {
+      // No token found, set as not authenticated
+      setAuthState(prev => ({ ...prev, token: null }));
     }
   }, []);
 
@@ -78,7 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const { token } = await res.json();
+      
+      // Store token in both localStorage and cookie
       localStorage.setItem('authToken', token);
+      document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`;
+      
       return validateToken(token);
     } catch (error) {
       console.error('Login failed:', error);
@@ -88,6 +105,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('authToken');
+    // Clear the cookie as well
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict';
+    
     setAuthState({
       token: null,
       email: null,
