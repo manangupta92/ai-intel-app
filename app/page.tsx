@@ -154,7 +154,7 @@ export default function Page() {
     // Run analysis for the selected company
     await runAnalysis(company);
   };
-  
+
   const runAnalysis = useCallback(async (company: Company) => {
     setRunning(true);
     setError("");
@@ -226,8 +226,8 @@ export default function Page() {
           <h1 className="text-xl font-bold">AI Stock Analysis</h1>
           <LogoutButton />
         </header>
-        
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">          
+
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row gap-8">{/* Left Pane - Company List */}
             <div className="w-full md:w-64 flex-shrink-0">
               <div className="bg-gray-900 rounded-lg p-4 sticky top-4 flex flex-col" style={{ height: 'calc(100vh - 4rem)' }}>
@@ -240,7 +240,7 @@ export default function Page() {
                     onChange={(e) => handleSearch(e.target.value)}
                   />
                 </div>
-                
+
                 <div className="flex-1 overflow-y-auto min-h-0">
                   {/* Search Results */}
                   {companies.length > 0 ? (
@@ -248,11 +248,10 @@ export default function Page() {
                       <button
                         key={company.symbol}
                         onClick={() => handleCompanySelect(company)}
-                        className={`w-full text-left p-2 rounded hover:bg-gray-800 transition-colors ${
-                          selectedCompany?.symbol === company.symbol
+                        className={`w-full text-left p-2 rounded hover:bg-gray-800 transition-colors ${selectedCompany?.symbol === company.symbol
                             ? "bg-gray-800"
                             : ""
-                        }`}
+                          }`}
                       >
                         <div className="font-medium">{company.symbol}</div>
                         <div className="text-sm text-gray-400">{company.name}</div>
@@ -280,11 +279,10 @@ export default function Page() {
                             <button
                               key={company.symbol}
                               onClick={() => handleCompanySelect(company)}
-                              className={`w-full text-left p-2 rounded hover:bg-gray-800 transition-colors ${
-                                selectedCompany?.symbol === company.symbol
+                              className={`w-full text-left p-2 rounded hover:bg-gray-800 transition-colors ${selectedCompany?.symbol === company.symbol
                                   ? "bg-gray-800"
                                   : ""
-                              }`}
+                                }`}
                             >
                               <div className="font-medium">{company.symbol}</div>
                               <div className="text-sm text-gray-400">{company.name}</div>
@@ -299,7 +297,7 @@ export default function Page() {
                     </div>
                   )}
                 </div>
-                
+
               </div>
             </div>
 

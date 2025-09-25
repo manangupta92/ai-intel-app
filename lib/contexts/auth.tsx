@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check for stored token on mount - check both localStorage and cookies
     let token = localStorage.getItem('authToken');
-    
+
     // If not in localStorage, check cookies
     if (!token) {
       const cookieString = document.cookie;
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token = tokenMatch[1];
       }
     }
-    
+
     if (token) {
       validateToken(token);
     } else {
@@ -91,11 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const { token } = await res.json();
-      
+
       // Store token in both localStorage and cookie
       localStorage.setItem('authToken', token);
       document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`;
-      
+
       return validateToken(token);
     } catch (error) {
       console.error('Login failed:', error);
@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('authToken');
     // Clear the cookie as well
     document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict';
-    
+
     setAuthState({
       token: null,
       email: null,

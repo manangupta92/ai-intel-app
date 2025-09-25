@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
     '/auth/register',
   ]
 
-  const isPublicPath = publicPaths.some(path => 
+  const isPublicPath = publicPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   )
 
