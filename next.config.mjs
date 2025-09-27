@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverActions: {
-      allowedOrigins: ["*"]
-    }
-  }
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.d\.ts$/,
+      loader: 'ignore-loader',
+    });
+    return config;
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
